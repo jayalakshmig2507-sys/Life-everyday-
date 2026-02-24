@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker: Gym & Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-5">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        <h1 class="text-3xl font-bold text-center text-indigo-600">My Life Tracker</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">🏋️ Gym Log</h2>
+            <div class="flex gap-2 mb-4">
+                <input id="exercise" type="text" placeholder="Exercise (e.g. Bench Press)" class="border p-2 flex-grow rounded">
+                <input id="stats" type="text" placeholder="Sets/Reps/Weight" class="border p-2 w-1/3 rounded">
+                <button onclick="saveWorkout()" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">Log</button>
+            </div>
+            <ul id="workout-list" class="divide-y"></ul>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">📅 Today's Schedule</h2>
+            <div id="calendar-view" class="text-gray-500 italic">
+                Data syncing with Firebase...
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 1. REPLACE THIS WITH YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const workoutCol = collection(db, "workouts");
+
+        // 2. Save Workout to Firebase
+        window.saveWorkout = async () => {
+            const ex = document.getElementById('exercise').value;
+            const stats = document.getElementById('stats').value;
+            
+            if(ex && stats) {
+                await addDoc(workoutCol, {
+                    exercise: ex,
+                    stats: stats,
+                    timestamp: new Date()
+                });
+                document.getElementById('exercise').value = '';
+                document.getElementById('stats').value = '';
+            }
+        };
+
+        // 3. Listen for Real-time Changes
+        const q = query(workoutCol, orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('workout-list');
+            list.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                list.innerHTML += `
+                    <li class="py-2 flex justify-between">
+                        <span class="font-medium">${data.exercise}</span>
+                        <span class="text-gray-600">${data.stats}</span>
+                    </li>`;
+            });
+        });
+    </script>
+</body>
+</html>
