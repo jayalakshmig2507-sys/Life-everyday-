@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Tracker: Gym & Calendar</title>
+    <title>Life Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-5">
+<body class="bg-slate-50 p-4">
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        <h1 class="text-3xl font-bold text-center text-indigo-600">My Life Tracker</h1>
-
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold mb-4">🏋️ Gym Log</h2>
-            <div class="flex gap-2 mb-4">
-                <input id="exercise" type="text" placeholder="Exercise (e.g. Bench Press)" class="border p-2 flex-grow rounded">
-                <input id="stats" type="text" placeholder="Sets/Reps/Weight" class="border p-2 w-1/3 rounded">
-                <button onclick="saveWorkout()" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">Log</button>
-            </div>
-            <ul id="workout-list" class="divide-y"></ul>
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="bg-indigo-600 p-4">
+            <h1 class="text-white text-xl font-bold text-center">🏋️ Gym & Life Tracker</h1>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold mb-4">📅 Today's Schedule</h2>
-            <div id="calendar-view" class="text-gray-500 italic">
-                Data syncing with Firebase...
+        <div class="p-6 space-y-4">
+            <div class="space-y-2">
+                <input id="exercise" type="text" placeholder="Exercise Name" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-400 outline-none">
+                <input id="stats" type="text" placeholder="Sets / Reps / Weight" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-400 outline-none">
+                <button id="saveBtn" class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition">
+                    Save to Firebase
+                </button>
+            </div>
+
+            <hr>
+
+            <div id="workout-list" class="space-y-3">
+                <p class="text-gray-400 text-center italic">Loading logs...</p>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. REPLACE THIS WITH YOUR FIREBASE CONFIG
+        // --- PASTE YOUR CONFIG HERE ---
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -43,38 +44,52 @@
             appId: "YOUR_APP_ID"
         };
 
+        // Initialize
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const workoutCol = collection(db, "workouts");
+        const colRef = collection(db, "workouts");
 
-        // 2. Save Workout to Firebase
-        window.saveWorkout = async () => {
+        const saveBtn = document.getElementById('saveBtn');
+        const listContainer = document.getElementById('workout-list');
+
+        // FIXED: Using addEventListener instead of inline onclick
+        saveBtn.addEventListener('click', async () => {
             const ex = document.getElementById('exercise').value;
-            const stats = document.getElementById('stats').value;
-            
-            if(ex && stats) {
-                await addDoc(workoutCol, {
-                    exercise: ex,
-                    stats: stats,
-                    timestamp: new Date()
-                });
-                document.getElementById('exercise').value = '';
-                document.getElementById('stats').value = '';
-            }
-        };
+            const st = document.getElementById('stats').value;
 
-        // 3. Listen for Real-time Changes
-        const q = query(workoutCol, orderBy("timestamp", "desc"));
+            if (!ex || !st) return alert("Please fill both fields");
+
+            try {
+                await addDoc(colRef, {
+                    exercise: ex,
+                    stats: st,
+                    createdAt: serverTimestamp() // Better than local JS time
+                });
+                document.getElementById('exercise').value = "";
+                document.getElementById('stats').value = "";
+            } catch (err) {
+                console.error("Error adding document: ", err);
+            }
+        });
+
+        // Real-time listener
+        const q = query(colRef, orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
-            const list = document.getElementById('workout-list');
-            list.innerHTML = "";
+            listContainer.innerHTML = "";
+            if (snapshot.empty) {
+                listContainer.innerHTML = '<p class="text-gray-400 text-center">No logs yet.</p>';
+            }
             snapshot.forEach((doc) => {
-                const data = doc.data();
-                list.innerHTML += `
-                    <li class="py-2 flex justify-between">
-                        <span class="font-medium">${data.exercise}</span>
-                        <span class="text-gray-600">${data.stats}</span>
-                    </li>`;
+                const item = doc.data();
+                const div = document.createElement('div');
+                div.className = "p-3 bg-gray-50 border-l-4 border-indigo-500 rounded flex justify-between items-center";
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-gray-800">${item.exercise}</div>
+                        <div class="text-sm text-gray-500">${item.stats}</div>
+                    </div>
+                `;
+                listContainer.appendChild(div);
             });
         });
     </script>
