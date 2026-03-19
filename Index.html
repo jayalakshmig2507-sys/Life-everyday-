@@ -1,144 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Tracker</title>
-<script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jayam's Life Tracker & Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+    <style>
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+        .animate-flash { animation: pulse-gold 2s infinite; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #e5e7eb; }
+        .calendar-day { min-height: 100px; background: white; padding: 0.5rem; transition: background 0.2s; }
+        .calendar-day:hover { background: #f9fafb; cursor: pointer; }
+        .holiday-mark { border-top: 3px solid #ef4444; }
+        .today-mark { background: #fefce8 !important; border: 2px solid #ca8a04; }
+        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .sidebar-photo { object-fit: cover; height: 100%; border-radius: 1rem; }
+    </style>
 </head>
+<body class="bg-gray-50 font-sans">
 
-<body class="bg-gray-100 p-4">
+<div class="flex h-screen overflow-hidden">
+    <div class="w-2/3 flex flex-col p-6 overflow-y-auto">
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Life Tracker</h1>
+            <div class="flex gap-4">
+                 <button onclick="openCalendar()" class="animate-flash bg-yellow-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold">
+                    <i data-lucide="calendar"></i> OPEN FULL SCHEDULER
+                </button>
+            </div>
+        </header>
 
-<div class="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="flex border-b mb-6 bg-white rounded-t-lg">
+            <button onclick="switchTab('parttime')" id="tab-parttime" class="flex-1 py-3 tab-active">Part Time</button>
+            <button onclick="switchTab('fulltime')" id="tab-fulltime" class="flex-1 py-3 text-gray-500">Full Time</button>
+            <button onclick="switchTab('growth')" id="tab-growth" class="flex-1 py-3 text-gray-500">Growth</button>
+            <button onclick="switchTab('course')" id="tab-course" class="flex-1 py-3 text-gray-500">Course</button>
+        </div>
 
-  <!-- Header -->
-  <div class="bg-indigo-600 p-4">
-    <h1 class="text-white text-xl font-bold text-center">📊 Life Tracker</h1>
-  </div>
+        <div id="task-container" class="space-y-4">
+            </div>
 
-  <!-- Image -->
-  <div class="p-4 text-center">
-    <img src="https://i.postimg.cc/MnrX2g21/2da0fa98.png"
-         class="w-1/2 mx-auto object-contain rounded-lg shadow-md">
-  </div>
-
-  <!-- Form -->
-  <div class="p-4 space-y-2">
-    <input id="companyName" placeholder="Company Name" class="w-full p-2 border rounded">
-    <input id="jobDescription" placeholder="Job Description" class="w-full p-2 border rounded">
-    <input id="contactName" placeholder="Contact Name" class="w-full p-2 border rounded">
-    <input id="contactEmail" placeholder="Contact Email" class="w-full p-2 border rounded">
-    <input id="followUpDate" type="date" class="w-full p-2 border rounded">
-
-    <select id="status" class="w-full p-2 border rounded">
-      <option value="pending">Pending</option>
-      <option value="done">Done</option>
-    </select>
-
-    <button id="saveTask"
-      class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
-      Save Task
-    </button>
-  </div>
-
-  <!-- Task List -->
-  <div class="p-4">
-    <h2 class="font-bold mb-2">Saved Tasks</h2>
-    <div id="taskList" class="space-y-2">
-      <p class="text-gray-400">No tasks yet...</p>
+        <button onclick="showAddTaskModal()" class="mt-8 bg-blue-600 text-white p-4 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+            <i data-lucide="plus-circle"></i> Add New Record
+        </button>
     </div>
-  </div>
 
+    <div class="w-1/3 p-6 bg-white border-l flex flex-col">
+        <div class="flex-1 mb-6">
+            <img src="https://i.postimg.cc/jjRfNrM3/63445777-1BCC-4A05-ACF6-7AAE2396A4E9.png" alt="Profile" class="sidebar-photo shadow-2xl w-full">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-blue-50 p-4 rounded-xl text-center">
+                <p class="text-blue-600 text-sm font-bold">ACTIVE TASKS</p>
+                <p id="stat-active" class="text-2xl font-black">0</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-xl text-center">
+                <p class="text-green-600 text-sm font-bold">COMPLETED</p>
+                <p id="stat-done" class="text-2xl font-black">0</p>
+            </div>
+        </div>
+        <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" class="mt-4 text-center text-sm text-gray-400 hover:underline">
+            Go to Google Calendar →
+        </a>
+    </div>
 </div>
 
-<!-- ✅ Firebase Script -->
+<div id="calendar-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h2 id="calendar-month-year" class="text-2xl font-bold">Month Year</h2>
+            <div class="flex gap-2">
+                <button onclick="prevMonth()" class="p-2 hover:bg-gray-100 rounded">‹</button>
+                <button onclick="nextMonth()" class="p-2 hover:bg-gray-100 rounded">›</button>
+                <button onclick="closeCalendar()" class="ml-4 text-gray-500 hover:text-black">✕</button>
+            </div>
+        </div>
+        <div class="overflow-y-auto p-4">
+            <div class="grid grid-cols-7 text-center font-bold text-gray-500 mb-2">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+            </div>
+            <div id="calendar-body" class="calendar-grid">
+                </div>
+        </div>
+    </div>
+</div>
+
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyC1IkJhlE0Z6vqSjbGwkxPfT2udshsQCBc",
+        authDomain: "jayam-personal-2026.firebaseapp.com",
+        projectId: "jayam-personal-2026",
+        storageBucket: "jayam-personal-2026.firebasestorage.app",
+        messagingSenderId: "62160466692",
+        appId: "1:62160466692:web:a2587dce772da5a6861651"
+    };
 
-// Config
-const firebaseConfig = {
-  apiKey: "AIzaSyC1IkJhlE0Z6vqSjbGwkxPfT2udshsQCBc",
-  authDomain: "jayam-personal-2026.firebaseapp.com",
-  projectId: "jayam-personal-2026",
-  storageBucket: "jayam-personal-2026.firebasestorage.app",
-  messagingSenderId: "62160466692",
-  appId: "1:62160466692:web:a2587dce772da5a6861651",
-  measurementId: "G-YX1KZYZFEL"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let currentTab = 'parttime';
+    let currentDate = new Date();
 
-// Init
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    // Initialize Icons
+    lucide.createIcons();
 
-const saveBtn = document.getElementById("saveTask");
-const taskList = document.getElementById("taskList");
+    // --- TAB SYSTEM ---
+    window.switchTab = (tab) => {
+        currentTab = tab;
+        document.querySelectorAll('button[id^="tab-"]').forEach(btn => btn.className = "flex-1 py-3 text-gray-500");
+        document.getElementById(`tab-${tab}`).className = "flex-1 py-3 tab-active";
+        loadTasks();
+    };
 
-// ✅ SAVE TASK
-saveBtn.addEventListener("click", async () => {
+    function loadTasks() {
+        const q = query(collection(db, currentTab), orderBy('createdAt', 'desc'));
+        onSnapshot(q, (snapshot) => {
+            const container = document.getElementById('task-container');
+            container.innerHTML = '';
+            let active = 0, done = 0;
+            
+            snapshot.forEach((doc) => {
+                const task = doc.data();
+                if(task.status === 'Done') done++; else active++;
+                
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center";
+                card.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-lg">${task.name}</h3>
+                        <p class="text-gray-600 text-sm">${task.desc}</p>
+                        <span class="text-xs text-blue-500 font-medium">Follow up: ${task.date || 'No date'}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <select onchange="updateStatus('${doc.id}', this.value)" class="bg-gray-50 border rounded-md p-1 text-sm">
+                            <option value="Pending" ${task.status === 'Pending' ? 'selected' : ''}>⏳ Pending</option>
+                            <option value="Working" ${task.status === 'Working' ? 'selected' : ''}>🔨 Working</option>
+                            <option value="Done" ${task.status === 'Done' ? 'selected' : ''}>✅ Done</option>
+                        </select>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById('stat-active').innerText = active;
+            document.getElementById('stat-done').innerText = done;
+        });
+    }
 
-  const companyName = document.getElementById("companyName").value;
-  const followUpDate = document.getElementById("followUpDate").value;
+    window.updateStatus = async (id, newStatus) => {
+        await updateDoc(doc(db, currentTab, id), { status: newStatus });
+    };
 
-  if (!companyName || !followUpDate) {
-    alert("Please fill required fields");
-    return;
-  }
+    // --- CALENDAR SYSTEM ---
+    window.openCalendar = () => {
+        document.getElementById('calendar-modal').classList.remove('hidden');
+        renderCalendar();
+    };
+    window.closeCalendar = () => document.getElementById('calendar-modal').classList.add('hidden');
 
-  try {
-    await addDoc(collection(db, "tasks"), {
-      companyName,
-      jobDescription: document.getElementById("jobDescription").value,
-      contactName: document.getElementById("contactName").value,
-      contactEmail: document.getElementById("contactEmail").value,
-      followUpDate,
-      status: document.getElementById("status").value,
-      createdAt: serverTimestamp()
-    });
+    function renderCalendar() {
+        const monthYear = document.getElementById('calendar-month-year');
+        const calendarBody = document.getElementById('calendar-body');
+        calendarBody.innerHTML = '';
 
-    alert("✅ Task Saved!");
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        monthYear.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentDate);
 
-    // clear form
-    document.querySelectorAll("input").forEach(i => i.value = "");
-    document.getElementById("status").value = "pending";
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  } catch (err) {
-    console.error(err);
-    alert("❌ Error saving task");
-  }
-});
+        // Empty cells for previous month
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = "calendar-day bg-gray-50";
+            calendarBody.appendChild(empty);
+        }
 
-// ✅ REAL-TIME DISPLAY (Fixes refresh issue)
-const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+        // Days of current month
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayCell = document.createElement('div');
+            const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
+            dayCell.className = `calendar-day ${isToday ? 'today-mark' : ''}`;
+            dayCell.innerHTML = `<span class="font-bold">${d}</span>`;
+            
+            // Add click event to add schedule
+            dayCell.onclick = () => {
+                const title = prompt(`Add schedule for ${d} ${monthYear.innerText}:`);
+                if(title) saveSchedule(year, month, d, title);
+            };
 
-onSnapshot(q, (snapshot) => {
-  taskList.innerHTML = "";
+            calendarBody.appendChild(dayCell);
+        }
+    }
 
-  if (snapshot.empty) {
-    taskList.innerHTML = '<p class="text-gray-400">No tasks yet...</p>';
-    return;
-  }
+    async function saveSchedule(y, m, d, title) {
+        const dateStr = `${y}-${m+1}-${d}`;
+        await addDoc(collection(db, "schedules"), {
+            title,
+            date: dateStr,
+            createdAt: serverTimestamp()
+        });
+        alert("Schedule Saved!");
+        renderCalendar();
+    }
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
+    window.prevMonth = () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); };
+    window.nextMonth = () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); };
 
-    const div = document.createElement("div");
-    div.className = "p-3 border rounded bg-gray-50";
-
-    div.innerHTML = `
-      <div class="font-bold">${data.companyName}</div>
-      <div class="text-sm">${data.jobDescription || ""}</div>
-      <div class="text-sm">${data.contactName || ""} | ${data.contactEmail || ""}</div>
-      <div class="text-sm">Follow-up: ${data.followUpDate}</div>
-      <div class="text-xs text-gray-500">Status: ${data.status}</div>
-    `;
-
-    taskList.appendChild(div);
-  });
-});
+    // Initial Load
+    loadTasks();
 
 </script>
-
 </body>
 </html>
