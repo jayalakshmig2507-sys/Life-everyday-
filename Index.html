@@ -1,97 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 p-4">
 
-    <div class="max-w-md mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
-        <div class="bg-indigo-600 p-4">
-            <h1 class="text-white text-xl font-bold text-center">🏋️ Gym & Life Tracker</h1>
-        </div>
+<body class="bg-gray-100 p-4">
 
-        <div class="p-6 space-y-4">
-            <div class="space-y-2">
-                <input id="exercise" type="text" placeholder="Exercise Name" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-400 outline-none">
-                <input id="stats" type="text" placeholder="Sets / Reps / Weight" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-400 outline-none">
-                <button id="saveBtn" class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition">
-                    Save to Firebase
-                </button>
-            </div>
+<div class="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
 
-            <hr>
+  <!-- Header -->
+  <div class="bg-indigo-600 p-4">
+    <h1 class="text-white text-xl font-bold text-center">📊 Life Tracker</h1>
+  </div>
 
-            <div id="workout-list" class="space-y-3">
-                <p class="text-gray-400 text-center italic">Loading logs...</p>
-            </div>
-        </div>
+  <!-- Image -->
+  <div class="p-4 text-center">
+    <img src="https://i.postimg.cc/MnrX2g21/2da0fa98.png"
+         class="w-1/2 mx-auto object-contain rounded-lg shadow-md">
+  </div>
+
+  <!-- Form -->
+  <div class="p-4 space-y-2">
+    <input id="companyName" placeholder="Company Name" class="w-full p-2 border rounded">
+    <input id="jobDescription" placeholder="Job Description" class="w-full p-2 border rounded">
+    <input id="contactName" placeholder="Contact Name" class="w-full p-2 border rounded">
+    <input id="contactEmail" placeholder="Contact Email" class="w-full p-2 border rounded">
+    <input id="followUpDate" type="date" class="w-full p-2 border rounded">
+
+    <select id="status" class="w-full p-2 border rounded">
+      <option value="pending">Pending</option>
+      <option value="done">Done</option>
+    </select>
+
+    <button id="saveTask"
+      class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
+      Save Task
+    </button>
+  </div>
+
+  <!-- Task List -->
+  <div class="p-4">
+    <h2 class="font-bold mb-2">Saved Tasks</h2>
+    <div id="taskList" class="space-y-2">
+      <p class="text-gray-400">No tasks yet...</p>
     </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+</div>
 
-        // --- PASTE YOUR CONFIG HERE ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
-        };
+<!-- ✅ Firebase Script -->
+<script type="module">
 
-        // Initialize
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const colRef = collection(db, "workouts");
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const saveBtn = document.getElementById('saveBtn');
-        const listContainer = document.getElementById('workout-list');
+// Config
+const firebaseConfig = {
+  apiKey: "AIzaSyC1IkJhlE0Z6vqSjbGwkxPfT2udshsQCBc",
+  authDomain: "jayam-personal-2026.firebaseapp.com",
+  projectId: "jayam-personal-2026",
+  storageBucket: "jayam-personal-2026.firebasestorage.app",
+  messagingSenderId: "62160466692",
+  appId: "1:62160466692:web:a2587dce772da5a6861651",
+  measurementId: "G-YX1KZYZFEL"
+};
 
-        // FIXED: Using addEventListener instead of inline onclick
-        saveBtn.addEventListener('click', async () => {
-            const ex = document.getElementById('exercise').value;
-            const st = document.getElementById('stats').value;
+// Init
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-            if (!ex || !st) return alert("Please fill both fields");
+const saveBtn = document.getElementById("saveTask");
+const taskList = document.getElementById("taskList");
 
-            try {
-                await addDoc(colRef, {
-                    exercise: ex,
-                    stats: st,
-                    createdAt: serverTimestamp() // Better than local JS time
-                });
-                document.getElementById('exercise').value = "";
-                document.getElementById('stats').value = "";
-            } catch (err) {
-                console.error("Error adding document: ", err);
-            }
-        });
+// ✅ SAVE TASK
+saveBtn.addEventListener("click", async () => {
 
-        // Real-time listener
-        const q = query(colRef, orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
-            listContainer.innerHTML = "";
-            if (snapshot.empty) {
-                listContainer.innerHTML = '<p class="text-gray-400 text-center">No logs yet.</p>';
-            }
-            snapshot.forEach((doc) => {
-                const item = doc.data();
-                const div = document.createElement('div');
-                div.className = "p-3 bg-gray-50 border-l-4 border-indigo-500 rounded flex justify-between items-center";
-                div.innerHTML = `
-                    <div>
-                        <div class="font-bold text-gray-800">${item.exercise}</div>
-                        <div class="text-sm text-gray-500">${item.stats}</div>
-                    </div>
-                `;
-                listContainer.appendChild(div);
-            });
-        });
-    </script>
+  const companyName = document.getElementById("companyName").value;
+  const followUpDate = document.getElementById("followUpDate").value;
+
+  if (!companyName || !followUpDate) {
+    alert("Please fill required fields");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "tasks"), {
+      companyName,
+      jobDescription: document.getElementById("jobDescription").value,
+      contactName: document.getElementById("contactName").value,
+      contactEmail: document.getElementById("contactEmail").value,
+      followUpDate,
+      status: document.getElementById("status").value,
+      createdAt: serverTimestamp()
+    });
+
+    alert("✅ Task Saved!");
+
+    // clear form
+    document.querySelectorAll("input").forEach(i => i.value = "");
+    document.getElementById("status").value = "pending";
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error saving task");
+  }
+});
+
+// ✅ REAL-TIME DISPLAY (Fixes refresh issue)
+const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+
+onSnapshot(q, (snapshot) => {
+  taskList.innerHTML = "";
+
+  if (snapshot.empty) {
+    taskList.innerHTML = '<p class="text-gray-400">No tasks yet...</p>';
+    return;
+  }
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+
+    const div = document.createElement("div");
+    div.className = "p-3 border rounded bg-gray-50";
+
+    div.innerHTML = `
+      <div class="font-bold">${data.companyName}</div>
+      <div class="text-sm">${data.jobDescription || ""}</div>
+      <div class="text-sm">${data.contactName || ""} | ${data.contactEmail || ""}</div>
+      <div class="text-sm">Follow-up: ${data.followUpDate}</div>
+      <div class="text-xs text-gray-500">Status: ${data.status}</div>
+    `;
+
+    taskList.appendChild(div);
+  });
+});
+
+</script>
+
 </body>
 </html>
